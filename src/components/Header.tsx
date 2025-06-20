@@ -3,23 +3,54 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { FiSearch, FiMenu, FiX, FiShoppingCart, FiUser } from 'react-icons/fi';
+import { FiSearch, FiMenu, FiX, FiBook, FiGrid, FiUsers, FiBookOpen, FiChevronDown } from 'react-icons/fi';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isScrolled, setIsScrolled] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
-  const navLinks = [
-    { name: 'Home', href: '/' },
-    { name: 'Books', href: '/books' },
-    { name: 'Categories', href: '/categories' },
-    { name: 'Authors', href: '/authors' },
-    { name: 'About', href: '/about' },
-    { name: 'Contact', href: '/contact' },
+  interface NavLink {
+    name: string;
+    href: string;
+    icon?: React.ReactNode;
+    submenu?: NavLink[];
+  }
+
+  const navLinks: NavLink[] = [
+    { 
+      name: 'সকল বই', 
+      href: '/books',
+      icon: <FiBook className="mr-1" />,
+      submenu: [
+        { name: 'নতুন বই', href: '/books/new' },
+        { name: 'বেস্টসেলার', href: '/books/bestseller' },
+        { name: 'প্রি-অর্ডার', href: '/books/pre-order' },
+      ]
+    },
+    { 
+      name: 'লেখকবৃন্দ', 
+      href: '/authors',
+      icon: <FiUsers className="mr-1" />
+    },
+    { 
+      name: 'ক্যাটাগরি', 
+      href: '/categories',
+      icon: <FiGrid className="mr-1" />,
+      submenu: [
+        { name: 'উপন্যাস', href: '/categories/novel' },
+        { name: 'কমিক্স', href: '/categories/comics' },
+        { name: 'শিশু-কিশোর', href: '/categories/children' },
+      ]
+    },
+    { 
+      name: 'প্রকাশনী', 
+      href: '/publishers',
+      icon: <FiBookOpen className="mr-1" />
+    }
   ];
 
   useEffect(() => {
@@ -35,124 +66,134 @@ const Header = () => {
     if (searchQuery.trim()) {
       router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
       setIsSearchOpen(false);
+      setSearchQuery('');
     }
   };
 
   return (
     <header 
-      className={`sticky top-0 z-50 transition-all duration-300 ${
-        isScrolled ? 'bg-white shadow-md' : 'bg-white/90 backdrop-blur-sm'
-      }`}
+      className={`header ${isScrolled ? 'scrolled' : ''}`}
     >
       <div className="container mx-auto px-4">
         {/* Top Bar */}
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="text-2xl font-bold text-indigo-600">
-            Amader Boi
+          <Link href="/" className="text-2xl font-bold text-blue-600">
+            AmaderBoi
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-6">
+          <nav className="hidden md:flex items-center space-x-1">
             {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`text-gray-700 hover:text-indigo-600 transition-colors ${
-                  pathname === link.href ? 'font-medium text-indigo-600' : ''
-                }`}
-              >
-                {link.name}
-              </Link>
+              <div key={link.href} className="relative group">
+                <Link
+                  href={link.href}
+                  className={`flex items-center px-4 py-2 rounded-md text-sm font-medium ${
+                    pathname === link.href
+                      ? 'text-blue-600 bg-blue-50'
+                      : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                  }`}
+                >
+                  {link.icon}
+                  <span>{link.name}</span>
+                  {link.submenu && (
+                    <FiChevronDown className="ml-1 h-4 w-4" />
+                  )}
+                </Link>
+                
+                {/* Dropdown Menu */}
+                {link.submenu && (
+                  <div className="absolute left-0 mt-1 w-48 rounded-md shadow-lg bg-white ring-1 ring-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                    {link.submenu.map((subItem) => (
+                      <Link
+                        key={subItem.href}
+                        href={subItem.href}
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                      >
+                        {subItem.name}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
             ))}
           </nav>
 
-          {/* Right Side Icons */}
-          <div className="flex items-center space-x-4">
-            <button 
+          {/* Search Button */}
+          <div className="flex items-center">
+            <button
               onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className="p-2 text-gray-600 hover:text-indigo-600 transition-colors"
+              className="p-2 rounded-full text-gray-600 hover:bg-blue-50 hover:text-blue-600"
               aria-label="Search"
             >
-              <FiSearch className="w-5 h-5" />
+              <FiSearch className="h-5 w-5" />
             </button>
-            
-            <Link 
-              href="/account" 
-              className="p-2 text-gray-600 hover:text-indigo-600 transition-colors"
-              aria-label="Account"
-            >
-              <FiUser className="w-5 h-5" />
-            </Link>
-            
-            <Link 
-              href="/cart" 
-              className="p-2 text-gray-600 hover:text-indigo-600 transition-colors relative"
-              aria-label="Cart"
-            >
-              <FiShoppingCart className="w-5 h-5" />
-              <span className="absolute -top-1 -right-1 bg-indigo-600 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
-                0
-              </span>
-            </Link>
 
-            {/* Mobile Menu Button */}
+            {/* Mobile menu button */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden p-2 text-gray-600 hover:text-indigo-600 transition-colors"
+              className="md:hidden p-2 ml-2 rounded-md text-gray-600 hover:bg-blue-50 hover:text-blue-600"
               aria-label="Menu"
             >
               {isMenuOpen ? (
-                <FiX className="w-6 h-6" />
+                <FiX className="h-6 w-6" />
               ) : (
-                <FiMenu className="w-6 h-6" />
+                <FiMenu className="h-6 w-6" />
               )}
             </button>
           </div>
         </div>
 
-        {/* Mobile Menu */}
-        {isMenuOpen && (
-          <div className="md:hidden py-4 border-t border-gray-100">
-            <nav className="flex flex-col space-y-3">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`px-3 py-2 rounded-md ${
-                    pathname === link.href 
-                      ? 'bg-indigo-50 text-indigo-600 font-medium' 
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {link.name}
-                </Link>
-              ))}
-            </nav>
-          </div>
-        )}
-
         {/* Search Bar */}
         {isSearchOpen && (
-          <div className="py-4 border-t border-gray-100">
+          <div className="py-4">
             <form onSubmit={handleSearch} className="relative">
               <input
                 type="text"
+                placeholder="বই, লেখক বা প্রকাশনী খুঁজুন..."
+                className="w-full px-4 py-2 pl-10 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search for books, authors, categories..."
-                className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                autoFocus
               />
-              <button 
-                type="submit"
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-indigo-600"
-                aria-label="Submit search"
-              >
-                <FiSearch className="w-5 h-5" />
-              </button>
+              <FiSearch className="absolute left-3 top-3 text-gray-400" />
             </form>
+          </div>
+        )}
+
+        {/* Mobile Menu */}
+        {isMenuOpen && (
+          <div className="md:hidden bg-white border-t border-gray-200">
+            <div className="px-2 pt-2 pb-3 space-y-1">
+              {navLinks.map((link) => (
+                <div key={link.href}>
+                  <Link
+                    href={link.href}
+                    className={`block px-3 py-2 rounded-md text-base font-medium ${
+                      pathname === link.href
+                        ? 'bg-blue-50 text-blue-600'
+                        : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                    }`}
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    {link.name}
+                  </Link>
+                  {link.submenu && (
+                    <div className="pl-4 mt-1 space-y-1">
+                      {link.submenu.map((subItem) => (
+                        <Link
+                          key={subItem.href}
+                          href={subItem.href}
+                          className="block px-3 py-1 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-md"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          {subItem.name}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
