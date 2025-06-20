@@ -1,36 +1,89 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 📚 AmaderBoi - Free Bangla Book Library
 
-## Getting Started
+**AmaderBoi** is a beautifully crafted frontend project built with **Next.js** that provides access to a curated collection of Bangla books in PDF format — absolutely free. The goal is to promote reading and preserve literary heritage by making books more accessible to readers worldwide.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 🌟 Features
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- ✅ Browse and search Bangla books by title, author, or category
+- ✅ View detailed book pages with descriptions, categories, authors, and view counts
+- ✅ Direct PDF downloads with file size indicators
+- ✅ Track view counts per book
+- ✅ Related books section for better discovery
+- ✅ SEO Optimized (Meta tags, OG image, structured descriptions)
+- ✅ Fully responsive design
+- ✅ Mailchimp-integrated newsletter subscription
+- ✅ Clean UI with Tailwind CSS
+- ✅ Organized file structure (Components, Utils, API, Pages)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🧰 Tech Stack
 
-## Learn More
+- **Frontend**: [Next.js](https://nextjs.org/), [React](https://reactjs.org/)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **Data Source**: WordPress REST API (Custom `book` post type)
+- **Hosting**: Vercel (Recommended)
+- **Font**: Noto Serif Bengali
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🚀 Live Demo
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+👉 [https://amaderboi.net](https://amaderboi.net) _(Coming soon)_
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 📁 Project Structure Overview
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+/public
+/src
+/components → Reusable UI components (Header, Footer, BookCard, etc.)
+/pages
+/book/[slug].js → Dynamic book detail page
+/api → API routes (e.g., track-view)
+/styles → Global styles
+/utils → Helpers and data functions
+
+
+---
+
+## 📩 Newsletter
+
+Subscribe to get the latest Bangla books delivered to your inbox!  
+Newsletter powered by **Mailchimp**.
+
+---
+
+## ⚠️ Legal Disclaimer
+
+All books uploaded are collected from freely available sources across the web. If you are the copyright owner and wish to remove a book, please contact us — we will comply promptly. We respect copyright laws and believe in fair access to knowledge.
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Feel free to:
+- Submit issues
+- Suggest new features
+- Improve accessibility and performance
+
+---
+
+## 📜 License
+
+This project is under the [MIT License](LICENSE).
+
+---
+
+## 🙏 Acknowledgments
+
+- Noto Serif Bengali Font by Google Fonts
+- Inspiration from the reading culture of Bangladesh
+- All the authors whose work is shared to enlighten readers
+
+---
+
+_“Free books for all, knowledge for everyone.”_
+
