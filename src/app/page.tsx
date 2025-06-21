@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { FiBook, FiDownload, FiArrowRight } from 'react-icons/fi';
+import { FiBook, FiUser, FiArrowRight } from 'react-icons/fi';
 import BookCard from '@/components/BookCard';
 import CategoryCard from '@/components/CategoryCard';
 
@@ -29,21 +29,31 @@ export default async function Home() {
     }
   };
 
-  // Mock data for categories (replace with actual API call)
-  const categories = [
-    { id: 1, name: 'উপন্যাস', slug: 'novel', count: 124, icon: <FiBook /> },
-    { id: 2, name: 'কমিক্স', slug: 'comics', count: 56, icon: <FiBook /> },
-    { id: 3, name: 'শিশু-কিশোর', slug: 'children', count: 89, icon: <FiBook /> },
-    { id: 4, name: 'কবিতা', slug: 'poetry', count: 67, icon: <FiBook /> },
-  ];
-
-  // Mock data for popular authors (replace with actual API call)
-  const authors = [
-    { id: 1, name: 'হুমায়ূন আহমেদ', slug: 'humayun-ahmed', bookCount: 42 },
-    { id: 2, name: 'মুহম্মদ জাফর ইকবাল', slug: 'muhammad-zafar-iqbal', bookCount: 35 },
-    { id: 3, name: 'সৈয়দ মুজতবা আলী', slug: 'syed-mujtaba-ali', bookCount: 28 },
-    { id: 4, name: 'রবীন্দ্রনাথ ঠাকুর', slug: 'rabindranath-tagore', bookCount: 31 },
-  ];
+  // Fetch categories and authors data
+  const homeDataRes = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/home-data`, {
+    next: { revalidate: 3600 } // Revalidate every hour
+  });
+  
+  if (!homeDataRes.ok) {
+    console.error('Failed to fetch home data');
+  }
+  
+  const { categories = [], authors = [] } = await homeDataRes.json().catch(() => ({
+    categories: [],
+    authors: []
+  }));
+  
+  // Get top 4 categories and authors for the homepage
+  const featuredCategories = categories.slice(0, 4).map((cat: any) => ({
+    ...cat,
+    icon: <FiBook />
+  }));
+  
+  const featuredAuthors = authors.slice(0, 4).map((author: any) => ({
+    ...author,
+    icon: <FiUser />,
+    bookCount: author.count || 0
+  }));
 
   return (
     <div className="min-h-screen">
@@ -101,23 +111,29 @@ export default async function Home() {
       <section className="py-16">
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center mb-8">
-            <h2 className="text-2xl font-bold">বিভিন্ন ক্যাটাগরি</h2>
+            <h2 className="text-2xl font-bold">বিষয়ভিত্তিক বই</h2>
             <Link href="/categories" className="text-blue-600 hover:underline flex items-center gap-1">
-              সব দেখুন <FiArrowRight />
+              সব ক্যাটাগরি <FiArrowRight />
             </Link>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {categories.map((category) => (
-              <CategoryCard
-                key={category.id}
-                name={category.name}
-                count={category.count}
-                slug={category.slug}
-                icon={category.icon}
-              />
-            ))}
-          </div>
+          {featuredCategories.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {featuredCategories.map((category: any) => (
+                <CategoryCard
+                  key={category.id}
+                  name={category.name}
+                  slug={category.slug}
+                  count={category.count}
+                  icon={category.icon}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              কোনো ক্যাটাগরি পাওয়া যায়নি
+            </div>
+          )}
         </div>
       </section>
 
@@ -125,27 +141,33 @@ export default async function Home() {
       <section className="py-16 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center mb-8">
-            <h2 className="text-2xl font-bold">জনপ্রিয় লেখকবৃন্দ</h2>
+            <h2 className="text-2xl font-bold">জনপ্রিয় লেখক</h2>
             <Link href="/authors" className="text-blue-600 hover:underline flex items-center gap-1">
-              সব দেখুন <FiArrowRight />
+              সব লেখক <FiArrowRight />
             </Link>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {authors.map((author) => (
-              <Link 
-                key={author.id} 
-                href={`/authors/${author.slug}`}
-                className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow text-center"
-              >
-                <div className="w-24 h-24 bg-blue-100 rounded-full mx-auto mb-4 flex items-center justify-center text-blue-600 text-2xl">
-                  {author.name.charAt(0)}
-                </div>
-                <h3 className="font-semibold text-lg">{author.name}</h3>
-                <p className="text-gray-500 text-sm mt-1">{author.bookCount} টি বই</p>
-              </Link>
-            ))}
-          </div>
+          {featuredAuthors.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {featuredAuthors.map((author: any) => (
+                <Link 
+                  key={author.id} 
+                  href={`/authors/${author.slug}`}
+                  className="bg-white p-6 rounded-lg shadow hover:shadow-md transition-shadow flex flex-col items-center text-center"
+                >
+                  <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-2xl mb-3">
+                    {author.icon}
+                  </div>
+                  <h3 className="font-semibold text-lg">{author.name}</h3>
+                  <p className="text-gray-500 text-sm mt-1">{author.bookCount} বই</p>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              কোনো লেখক পাওয়া যায়নি
+            </div>
+          )}
         </div>
       </section>
 

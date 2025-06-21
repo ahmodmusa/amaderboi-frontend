@@ -45,13 +45,25 @@ export async function getBookBySlug(slug: string): Promise<Book | null> {
 }
 
 export async function getRelatedBooks(categoryIds: number[] = [], excludeId: number, limit = 4): Promise<Book[]> {
+  console.log('getRelatedBooks called with:', { categoryIds, excludeId, limit });
+  
   // If no category IDs provided, return empty array
   if (!categoryIds || categoryIds.length === 0) {
+    console.log('No category IDs provided, returning empty array');
     return [];
   }
 
   try {
-    const { items } = await fetchPaginatedData<Book>('/book', {
+    console.log('Fetching related books with params:', {
+      categories: categoryIds,
+      exclude: excludeId,
+      per_page: limit,
+      orderby: 'date',
+      order: 'desc',
+      _embed: '1'
+    });
+    
+    const result = await fetchPaginatedData<Book>('/book', {
       categories: categoryIds,
       exclude: excludeId,
       per_page: limit,
@@ -59,9 +71,18 @@ export async function getRelatedBooks(categoryIds: number[] = [], excludeId: num
       order: 'desc',
       _embed: '1' // Include author and featured media
     });
-    return items;
+    
+    console.log('Related books API response:', result);
+    
+    if (!result || !Array.isArray(result.items)) {
+      console.error('Unexpected response format from fetchPaginatedData:', result);
+      return [];
+    }
+    
+    console.log(`Found ${result.items.length} related books`);
+    return result.items;
   } catch (error) {
-    console.error('Error fetching related books:', error);
+    console.error('Error in getRelatedBooks:', error);
     return [];
   }
 }

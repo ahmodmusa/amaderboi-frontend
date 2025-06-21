@@ -1,6 +1,8 @@
 import { ReactNode } from 'react';
+import { notFound } from 'next/navigation';
 import { getBookBySlug } from '@/lib/api';
 import PageLayout from '@/app/PageLayout';
+import BookClientLayout from './BookLayoutClient'; // Using the new filename
 
 interface BookLayoutProps {
   children: ReactNode;
@@ -10,28 +12,33 @@ interface BookLayoutProps {
 }
 
 export default async function BookLayout({ children, params }: BookLayoutProps) {
-  const book = await getBookBySlug(params.slug);
+  const { slug } = params;
   
-  if (!book) {
-    return (
-      <PageLayout>
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4">Book not found</h1>
-          </div>
-        </div>
-      </PageLayout>
-    );
+  if (!slug) {
+    notFound();
   }
 
-  const author = book._embedded?.author?.[0]?.name || 'Unknown Author';
+  try {
+    const bookData = await getBookBySlug(slug);
+    
+    if (!bookData) {
+      notFound();
+    }
 
-  return (
-    <PageLayout
-      bookTitle={book.title.rendered}
-      bookAuthor={author}
-    >
-      {children}
-    </PageLayout>
-  );
+    const author = bookData?._embedded?.author?.[0]?.name || 'Unknown Author';
+    
+    return (
+      <PageLayout
+        bookTitle={bookData?.title?.rendered || 'Untitled Book'}
+        bookAuthor={author}
+      >
+        <BookClientLayout bookData={bookData}>
+          {children}
+        </BookClientLayout>
+      </PageLayout>
+    );
+  } catch (error) {
+    console.error('Error in BookLayout:', error);
+    notFound();
+  }
 }

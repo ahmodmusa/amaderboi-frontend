@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
 import PageLayout from "./PageLayout";
+import Footer from "@/components/Footer";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -26,13 +27,7 @@ export default function RootLayout({
               {children}
             </main>
           </PageLayout>
-          <footer className="bg-white border-t border-gray-200 py-6">
-            <div className="container mx-auto px-4">
-              <p className="text-center text-gray-600">
-                © {new Date().getFullYear()} Amader Boi. All rights reserved.
-              </p>
-            </div>
-          </footer>
+          <Footer />
         </div>
       </body>
     </html>

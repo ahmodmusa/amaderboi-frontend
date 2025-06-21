@@ -2,10 +2,10 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { FiDownload, FiEye } from 'react-icons/fi';
+import { FiDownload, FiEye, FiBookOpen } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
 
-interface BookCardProps {
+interface EyeCatchingBookCardProps {
   id: number;
   title: string;
   slug: string;
@@ -15,8 +15,15 @@ interface BookCardProps {
   categories?: Array<{name: string}>;
 }
 
-export default function BookCard({ id, title, slug, coverImage, author, views = 0, categories = [] }: BookCardProps) {
-  console.log('Book data:', { id, title, slug, author, categories });
+export default function EyeCatchingBookCard({ 
+  id, 
+  title, 
+  slug, 
+  coverImage, 
+  author, 
+  views = 0, 
+  categories = [] 
+}: EyeCatchingBookCardProps) {
   const router = useRouter();
 
   const handleDownload = (e: React.MouseEvent) => {
@@ -25,12 +32,8 @@ export default function BookCard({ id, title, slug, coverImage, author, views = 
     router.push(`/books/${slug}`);
   };
 
-  // Use CDN URL for book cover with fallback to provided coverImage
   const cdnCoverUrl = `https://cdn.amaderboi.net/covers/${slug}.webp`;
   
-  // Ensure author is a string and not empty
-  const displayAuthor = author && typeof author === 'string' && author.trim() !== '' ? author : 'Unknown Author';
-
   return (
     <div 
       className="group bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer flex flex-col h-full overflow-hidden transform hover:-translate-y-1 relative"
@@ -64,6 +67,8 @@ export default function BookCard({ id, title, slug, coverImage, author, views = 
             <FiDownload className="mr-2" /> ডাউনলোড করুন
           </button>
         </div>
+
+
       </div>
       
       {/* Card Content */}
@@ -72,7 +77,7 @@ export default function BookCard({ id, title, slug, coverImage, author, views = 
           <h3 className="font-bold text-lg text-gray-900 mb-1.5 line-clamp-2 leading-tight group-hover:text-blue-600 transition-colors">
             {title}
           </h3>
-          <p className="text-sm text-gray-500 font-medium">{displayAuthor}</p>
+          <p className="text-sm text-gray-500 font-medium">{author}</p>
         </div>
         
         <div className="flex justify-between items-center mt-auto pt-3 border-t border-gray-100">
@@ -84,7 +89,7 @@ export default function BookCard({ id, title, slug, coverImage, author, views = 
           </div>
           
           <div className="text-xs text-gray-400">
-            <span className="font-medium text-gray-500">PDF</span>
+            <span className="font-medium text-gray-500">পিডিএফ</span>
           </div>
         </div>
       </div>

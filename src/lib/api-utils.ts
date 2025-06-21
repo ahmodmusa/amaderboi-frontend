@@ -6,6 +6,12 @@ export async function fetchFromApi<T>(
   endpoint: string, 
   params: Record<string, any> = {}
 ): Promise<T> {
+  const startTime = Date.now();
+  const requestId = Math.random().toString(36).substring(2, 8);
+  
+  console.group(`[${requestId}] fetchFromApi: ${endpoint}`);
+  console.log('Request params:', JSON.stringify(params, null, 2));
+  
   try {
     const queryParams = new URLSearchParams();
     
@@ -24,26 +30,41 @@ export async function fetchFromApi<T>(
     }
     
     const url = `${API_BASE_URL}${endpoint}?${queryParams}`;
+    console.log('Full URL:', url);
+    
     const res = await fetch(url);
+    const responseTime = Date.now() - startTime;
+    
+    console.log(`Response status: ${res.status} (${responseTime}ms)`);
     
     if (!res.ok) {
       let errorData;
       try {
         errorData = await res.json();
-      } catch {
-        errorData = { message: 'Unknown error occurred' };
+        console.error('Error response:', errorData);
+      } catch (e) {
+        errorData = { message: 'Failed to parse error response' };
+        console.error('Failed to parse error response');
       }
       
-      throw new ApiError(
-        errorData.message || 'API request failed',
+      const error = new ApiError(
+        errorData.message || `API request failed with status ${res.status}`,
         res.status,
         errorData
       );
+      
+      console.error('API Error:', error);
+      throw error;
     }
     
-    return await res.json();
+    const data = await res.json();
+    console.log('Response data:', JSON.stringify(data, null, 2).substring(0, 500) + (JSON.stringify(data).length > 500 ? '...' : ''));
+    console.groupEnd();
+    
+    return data;
   } catch (error) {
-    console.error(`Error fetching from ${endpoint}:`, error);
+    console.error(`Error in fetchFromApi [${requestId}]:`, error);
+    console.groupEnd();
     throw ApiError.fromResponse(error);
   }
 }
@@ -52,6 +73,8 @@ export async function fetchPaginatedData<T>(
   endpoint: string,
   params: Record<string, any> = {}
 ): Promise<{ items: T[]; total: number; totalPages: number }> {
+  console.log(`fetchPaginatedData called for ${endpoint} with params:`, params);
+  
   const { page = 1, per_page = 12, exclude, ...restParams } = params;
   
   // Build query parameters
@@ -70,19 +93,37 @@ export async function fetchPaginatedData<T>(
     }
   }
   
-  const data = await fetchFromApi<{ 
-    data?: any[];
-    items?: any[];
-    total?: number;
-    total_pages?: number;
-  }>(endpoint, queryParams);
+  console.log('Final query parameters:', queryParams);
   
-  // Handle different response formats
-  const items = data.data || data.items || [];
-  const total = data.total || items.length;
-  const totalPages = data.total_pages || Math.ceil(total / per_page) || 1;
-  
-  return { items, total, totalPages };
+  try {
+    const data = await fetchFromApi<{ 
+      data?: any[];
+      items?: any[];
+      total?: number;
+      total_pages?: number;
+    }>(endpoint, queryParams);
+    
+    console.log('Raw API response:', data);
+    
+    // Handle different response formats
+    const items = Array.isArray(data) 
+      ? data 
+      : data?.data || data?.items || [];
+      
+    const total = data?.total || items.length;
+    const totalPages = data?.total_pages || Math.ceil(total / per_page) || 1;
+    
+    console.log(`Processed response: ${items.length} items, ${total} total, ${totalPages} pages`);
+    
+    return { 
+      items: items as T[], 
+      total, 
+      totalPages 
+    };
+  } catch (error) {
+    console.error('Error in fetchPaginatedData:', error);
+    throw error; // Re-throw to be handled by the caller
+  }
 }
 
 /**

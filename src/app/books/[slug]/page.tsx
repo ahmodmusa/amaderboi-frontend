@@ -4,6 +4,7 @@ import { getBookBySlug, getRelatedBooks, getBooks } from '@/lib/api';
 import { getFileSize, formatFileSize } from '@/lib/file-utils';
 import BookCard from '@/components/BookCard';
 import BookCoverImage from '@/components/BookCoverImage';
+import RecommendedBooksList from '@/components/RecommendedBooksList';
 import ShareButtons from '@/components/ShareButtons';
 
 
@@ -22,7 +23,8 @@ interface BookPageProps {
 }
 
 export default async function BookPage({ params }: BookPageProps) {
-  const book = await getBookBySlug(params.slug);
+  const { slug } = params;
+  const book = await getBookBySlug(slug);
   // Fetch more books for better randomization
   const allBooksResponse = await getBooks({ per_page: 20 });
   const allBooks = allBooksResponse?.items || [];
@@ -55,29 +57,37 @@ export default async function BookPage({ params }: BookPageProps) {
   const formattedFileSize = formatFileSize(pdfSize || book.meta?.file_size);
   
     // Get related books from the first category
-  const categoryIds = categories.map((cat: any) => cat.id);
-  console.log('Category IDs:', categoryIds);
   let relatedBooks: any[] = [];
   
   try {
-    relatedBooks = await getRelatedBooks(categoryIds, book.id);
-    console.log('Fetched related books:', relatedBooks);
-    // Filter out the current book and limit to 4
-    relatedBooks = relatedBooks.filter((b: any) => b.id !== book.id).slice(0, 4);
-    console.log('Filtered related books:', relatedBooks);
+    if (categories[0]?.id) {
+      console.log('Calling getRelatedBooks with category:', categories[0].id);
+      const related = await getRelatedBooks([categories[0].id], book.id);
+      console.log('Raw related books response:', related);
+      
+      if (Array.isArray(related)) {
+        relatedBooks = related
+          .filter((b: any) => b && b.id !== book.id)
+          .slice(0, 4);
+        console.log('Filtered related books:', relatedBooks);
+      } else {
+        console.error('Invalid related books response format:', related);
+      }
+    }
   } catch (error) {
     console.error('Error loading related books:', error);
-    relatedBooks = [];
   }
 
   // Get recommended books (random 5 books from the same categories)
   let recommendedBooks: any[] = [];
   try {
+    const categoryIds = categories.map(cat => cat.id);
+    
     if (categoryIds.length > 0) {
       console.log('Fetching recommended books for categories:', categoryIds);
       
       // First try to get books from the same categories
-      const { items } = await getBooks({
+      const response = await getBooks({
         categories: categoryIds,
         per_page: 20, // Fetch more to ensure we get enough after filtering
         orderby: 'date',
@@ -85,34 +95,45 @@ export default async function BookPage({ params }: BookPageProps) {
         _embed: true // Explicitly request embedded data
       });
       
+      console.log('Books API response:', response);
+      const items = response?.items || [];
       console.log('Fetched recommended books:', items);
       
       // Process the books
-      if (items && items.length > 0) {
-        // Filter out the current book and ensure we have unique books
-        const uniqueBooks = Array.from(new Map(
-          items.map((item: any) => [item.id, item])
-        ).values());
+      if (items.length > 0) {
+        // Create a map to ensure unique books by ID
+        const bookMap = new Map<number, any>();
         
-        recommendedBooks = uniqueBooks
-          .filter((item: any) => item.id !== book.id)
-          .slice(0, 5); // Limit to 5 books
+        // Add books to the map, ensuring uniqueness by ID
+        items.forEach((item: any) => {
+          if (item && item.id && item.id !== book.id) {
+            bookMap.set(item.id, item);
+          }
+        });
         
-        console.log('Filtered recommended books:', recommendedBooks);
+        // Convert map values back to array and limit to 5
+        recommendedBooks = Array.from(bookMap.values()).slice(0, 5);
+        console.log('Unique recommended books:', recommendedBooks);
+      } else {
+        console.log('No books found in the same categories');
       }
     } else {
       console.log('No category IDs found for recommendations');
     }
     
-    // If not enough category-based recommendations, add random books
+    // If not enough books from the same category, add random books
     if (recommendedBooks.length < 5) {
-      console.log('Adding random books to recommendations');
-      const needed = 5 - recommendedBooks.length;
-      const availableBooks = allBooks.filter(b => b.id !== book.id);
-      const randomBooks = getRandomBooks(availableBooks, needed, book.id);
-      recommendedBooks = [...recommendedBooks, ...randomBooks];
-      console.log('Final recommended books:', recommendedBooks);
+      const remaining = 5 - recommendedBooks.length;
+      const otherBooks = allBooks.filter((b: any) => 
+        !recommendedBooks.some((rb: any) => rb.id === b.id) && 
+        b.id !== book.id
+      );
+      
+      const shuffled = [...otherBooks].sort(() => 0.5 - Math.random());
+      recommendedBooks = [...recommendedBooks, ...shuffled.slice(0, remaining)];
     }
+    
+    console.log('Final recommended books after adding random:', recommendedBooks);
   } catch (error) {
     console.error('Error loading recommended books:', error);
     recommendedBooks = getRandomBooks(allBooks, 5, book.id);
@@ -120,7 +141,7 @@ export default async function BookPage({ params }: BookPageProps) {
 
   // Generate universal book description
   const categoryNames = categories.map((cat: any) => cat.name).join(', ');
-  const universalDescription = `${book.title.rendered} book written by ${author.name}${categoryNames ? ` in ${categoryNames}` : ''}. It has been viewed ${book.meta?.views?.toLocaleString() || '0'} times.`;
+  const universalDescription = `${book.title.rendered} (${slug}) is a remarkable book written by ${author.name}, available in the category of ${categoryNames || 'Uncategorized'}. Explore the full content, dive into the story, and enjoy an uninterrupted reading experience. ${author.name}'s works are freely available online to read or download at Amaderboi. Discover books in Bengali, across fiction, history, biography, and more.`;
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -133,11 +154,16 @@ export default async function BookPage({ params }: BookPageProps) {
               {/* Book Cover */}
               <div className="md:w-1/3">
                 <div className="sticky top-4">
-                  <BookCoverImage 
-                    slug={params.slug}
-                    alt={book.title.rendered}
-                    className="rounded-lg shadow-lg w-full max-w-xs mx-auto"
-                  />
+                  <div className="w-full max-w-xs mx-auto">
+                    <BookCoverImage 
+                      slug={slug}
+                      alt={book.title.rendered}
+                      priority={true}
+                      className="rounded-lg shadow-lg w-full h-auto"
+                      width={300}
+                      height={450}
+                    />
+                  </div>
                   <div className="mt-4 flex justify-center">
                     <ShareButtons 
                       url={`${process.env.NEXT_PUBLIC_SITE_URL}/books/${params.slug}`}
@@ -154,13 +180,36 @@ export default async function BookPage({ params }: BookPageProps) {
                 
                 <div className="flex items-center text-gray-600 mb-4">
                   <FiUser className="mr-2 text-blue-600" />
-                  <span className="font-medium">{author?.name || 'Unknown Author'}</span>
+                  <span className="font-medium">
+                    {authorTerm?.slug ? (
+                      <Link 
+                        href={`/authors/${authorTerm.slug}`}
+                        className="text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                      >
+                        {author?.name || 'Unknown Author'}
+                      </Link>
+                    ) : (
+                      author?.name || 'Unknown Author'
+                    )}
+                  </span>
                 </div>
                 
-                <div className="flex flex-wrap gap-2 mb-6">
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                    <FiBook className="mr-1" /> {categories[0]?.name || 'Uncategorized'}
-                  </span>
+                <div className="flex flex-wrap gap-2 mb-6 items-center">
+                  {categories.length > 0 ? (
+                    categories.map((category: any) => (
+                      <Link 
+                        key={category.id}
+                        href={`/categories/${category.slug}`}
+                        className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
+                      >
+                        <FiBook className="mr-1" /> {category.name}
+                      </Link>
+                    ))
+                  ) : (
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                      <FiBook className="mr-1" /> Uncategorized
+                    </span>
+                  )}
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                     <FiEye className="mr-1" /> {book.meta?.views?.toLocaleString() || '0'} views
                   </span>
@@ -224,42 +273,12 @@ export default async function BookPage({ params }: BookPageProps) {
         
         {/* Right Sidebar - Recommended Books */}
         <div className="lg:w-1/4">
-          <div className="bg-white rounded-lg shadow-md p-6 sticky top-4">
-            <h2 className="text-xl font-bold mb-4 text-gray-900 flex items-center">
-              <FiBook className="mr-2 text-blue-600" />
+          <div className="bg-white rounded-lg shadow-sm p-4 sticky top-4">
+            <h2 className="text-lg font-semibold mb-3 text-gray-900 flex items-center">
+              <FiBook className="mr-2 text-blue-600 text-lg" />
               Recommended For You
             </h2>
-            <div className="space-y-4">
-              {recommendedBooks.map((recBook: any) => (
-                <Link 
-                  key={recBook.id} 
-                  href={`/books/${recBook.slug}`}
-                  className="block hover:bg-gray-50 p-2 rounded-md transition-colors"
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="flex-shrink-0">
-                      <BookCoverImage 
-                        slug={recBook.slug}
-                        alt={recBook.title.rendered}
-                        className="w-16 h-20 object-cover rounded"
-                      />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        {recBook.title.rendered}
-                      </p>
-                      <p className="text-xs text-gray-500 truncate">
-                        {recBook._embedded?.author?.[0]?.name || 'Unknown Author'}
-                      </p>
-                      <div className="flex items-center text-xs text-gray-500 mt-1">
-                        <FiEye className="mr-1" />
-                        <span>{recBook.meta?.views?.toLocaleString() || '0'}</span>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
+            <RecommendedBooksList books={recommendedBooks} />
           </div>
         </div>
       </div>
@@ -280,7 +299,7 @@ export default async function BookPage({ params }: BookPageProps) {
                 </Link>
               )}
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
               {relatedBooks.map((book: any) => {
                 const bookAuthor = book._embedded?.['wp:term']?.[1]?.[0]?.name || 
                                 book._embedded?.author?.[0]?.name || 'Unknown Author';
@@ -307,8 +326,10 @@ export default async function BookPage({ params }: BookPageProps) {
           {recommendedBooks.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
               {recommendedBooks.map((book: any) => {
+                console.log('Recommended book raw data:', book);
                 const bookAuthor = book._embedded?.['wp:term']?.[1]?.[0]?.name || 
                                 book._embedded?.author?.[0]?.name || 'Unknown Author';
+                console.log('Extracted author:', bookAuthor);
                 
                 return (
                   <BookCard
