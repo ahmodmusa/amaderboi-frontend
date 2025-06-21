@@ -52,18 +52,30 @@ export async function fetchPaginatedData<T>(
   endpoint: string,
   params: Record<string, any> = {}
 ): Promise<{ items: T[]; total: number; totalPages: number }> {
-  const { page = 1, per_page = 12, ...restParams } = params;
+  const { page = 1, per_page = 12, exclude, ...restParams } = params;
+  
+  // Build query parameters
+  const queryParams: Record<string, any> = {
+    ...restParams,
+    page,
+    per_page,
+  };
+
+  // Handle exclude parameter - WordPress REST API expects comma-separated IDs
+  if (exclude) {
+    if (Array.isArray(exclude)) {
+      queryParams.exclude = exclude.join(',');
+    } else {
+      queryParams.exclude = String(exclude);
+    }
+  }
   
   const data = await fetchFromApi<{ 
     data?: any[];
     items?: any[];
     total?: number;
     total_pages?: number;
-  }>(endpoint, {
-    ...restParams,
-    page,
-    per_page,
-  });
+  }>(endpoint, queryParams);
   
   // Handle different response formats
   const items = data.data || data.items || [];

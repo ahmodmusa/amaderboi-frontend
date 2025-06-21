@@ -1,11 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  swcMinify: true,
   images: {
     domains: [
       'admin.amaderboi.net',
-      'cdn.amaderboi.net',
       'cdn.amaderboi.net'
     ],
     remotePatterns: [
@@ -33,11 +31,8 @@ const nextConfig = {
   },
   // Handle static exports for static site generation
   output: 'standalone',
-  // Enable experimental features if needed
-  experimental: {
-    appDir: true,
-    serverComponentsExternalPackages: ['@prisma/client'],
-  },
+  // Server components external packages
+  serverExternalPackages: ['@prisma/client'],
 };
 
 module.exports = nextConfig;

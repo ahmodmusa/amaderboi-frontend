@@ -10,14 +10,23 @@ export async function getBooks(params: {
   search?: string;
   orderby?: 'date' | 'title' | 'views' | 'downloads';
   order?: 'asc' | 'desc';
+  _embed?: boolean | string;
 } = {}): Promise<{ items: Book[]; total: number; totalPages: number }> {
-  const { page = 1, per_page = 12, orderby = 'date', order = 'desc', ...rest } = params;
+  const { 
+    page = 1, 
+    per_page = 12, 
+    orderby = 'date', 
+    order = 'desc',
+    _embed = true, // Default to including embedded data
+    ...rest 
+  } = params;
   
   return fetchPaginatedData<Book>('/book', {
     page,
     per_page,
     orderby,
     order,
+    _embed: _embed ? '1' : undefined,
     ...rest
   });
 }
